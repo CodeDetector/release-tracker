@@ -1,0 +1,55 @@
+name: Track Releases
+
+on:
+  schedule:
+    # This example runs every hour; adjust the cron schedule as needed.
+    - cron: '0 * * * *'
+  workflow_dispatch:  # Allows you to run the workflow manually
+
+jobs:
+  track_releases:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install jq (for JSON processing)
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Fetch and log latest releases
+        env:
+          # GitHub Actions automatically provides GITHUB_TOKEN which is used for authentication.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # List your target repositories in "owner/repo" format
+          repos=("crewAIInc/crewAI" "infiniflow/infinity" "npm/cli")
+          
+          # Output file for logging release information (this file can later be committed or processed)
+          output_file="releases.txt"
+          echo "Release tracking report - $(date)" > $output_file
+          
+          # Iterate over each repository
+          for repo in "${repos[@]}"; do
+            echo "Checking releases for $repo..."
+            # Fetch the latest release info using the GitHub API
+            response=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" "https://api.github.com/repos/$repo/releases/latest")
+            
+            # Check if a valid JSON response was received
+            if echo "$response" | jq -e . >/dev/null 2>&1; then
+              tag=$(echo "$response" | jq -r .tag_name)
+              published_at=$(echo "$response" | jq -r .published_at)
+              
+              # Log the release details
+              if [ "$tag" != "null" ]; then
+                echo "$repo: Latest release is '$tag' published at $published_at" >> $output_file
+              else
+                echo "$repo: No release found." >> $output_file
+              fi
+            else
+              echo "$repo: Error retrieving release information" >> $output_file
+            fi
+          done
+          
+          # Output the report to the workflow log
+          cat $output_file
