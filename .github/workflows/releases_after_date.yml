@@ -25,7 +25,7 @@ jobs:
           target_date="2024-01-01T00:00:00Z"
           
           # List your repositories in "owner/repo" format.
-          repos=("crewAIInc/crewAI" "infiniflow/infinity" "npm/cli")
+          repos=("crewAIInc/crewAI" "infiniflow/infinity" "npm/cli" "grafana/grafana")
           
           # Define the output file for the report.
           output_file="releases_after_jan2024.txt"
